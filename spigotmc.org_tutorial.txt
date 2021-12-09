@@ -1,0 +1,575 @@
+JSON Configurations 가이드 for Spigot plugins 
+본 내용은 https://www.spigotmc.org/threads/tutorial-a-guide-on-json-configurations.181365/ 의 내용을 번역한 것임을 적어둡니다.
+오역, 의역이 있을 수 있습니다.
+
+[[[[[[[[ Part 0 : JSON 이해하기 ]]]]]]]]
+ 
+1. 개체
+
+먼저 우리는 '빈' 오브젝트를 중괄호를 사용해 생성할 수 있습니다.
+
+{
+
+}
+
+이것은 별로 쓸모가 없기 때문에, 추가적인 정보를 넣어봅시다:
+
+{
+  "Key": "Value"
+}
+
+이것은 이름이 '키' 이고, 안에 '값'이 들어있는 한 쌍의 객체를 생성할 것입니다.
+
+값은 다른 타입으로도 들어갈 수 있습니다. (예를 들면 숫자 같은) 하지만, 나중에 더 알아봅시다.
+
+한 객체 내에서 여러 쌍을 만들기 위해서, 우리는 콤마를 찍어줄 수 있습니다. ( , )
+
+{
+  "Key": "String",
+  "SomeNumber": 420,
+  "OtherNumber": 1337
+}
+
+콤마는 오로지 나누기 위해 사용한다는 것을 기억하세요 - 고로 마지막에는 쓸 수 없습니다.
+
+
+-------------------------------------------------------------------------------------------------------
+ 
+2. 배열
+
+이번에는 대괄호를 사용해서 배열을 생성합시다.
+
+[
+
+]
+
+아까와 똑같지만, 역시 이것은 쓸모가 없습니다! 몇몇 데이터를 좀 추가해봅시다.
+
+[
+  "Value1",
+  "Value2",
+  "Value3"
+]
+
+이번에는 이름과 함께 '한 쌍' 이 아닌, 그저 값만 있습니다.
+값의 타입은 섞여도 문제가 되지 않기에, 당신은 한 배열 안에 문자열,숫자 등등을 넣을 수 있습니다!
+
+
+-------------------------------------------------------------------------------------------------------
+
+3. 문제의 발생
+
+우리는 여기서 약간의 문제에 직면합니다.
+우리가 곧 작성할 코드에서 오브젝트를 가져오려면, 우리는 이름을 지정해주어야 합니다!
+오브젝트가 작동하는 방법을 이용해, 우리는 오브젝트를 다른 오브젝트 안으로 "스택" 합니다. 
+
+{
+  "People": {
+    "Dinnerbone": "Mojang",
+    "md_5": "Spigot"
+  }
+}
+
+1장에서 했던 것처럼, 우리는 "People"이 항목의 이름이며, 따라오는 게 값이라는 걸 알 수 있습니다.
+당연히 인덱스를 통해 개체를 가져올 수 있지만, 일단은 잠깐 무시해둡시다.
+
+
+-------------------------------------------------------------------------------------------------------
+
+4. 값
+
+json 속에는 여러 다른 타입의 값들이 있습니다 -
+
+- String - 문자열
+
+:: 여러 문자로 구성되어있음
+:: " 또는 \ 및 제어 문자를 제외한 모든 유니코드 문자 가능
+:: \" = 따옴표
+:: \\ = 백슬래시
+:: \/ = 슬래시
+:: \b = 백스페이스
+:: \f = formfeed ( 프린터 관련 문자 )
+:: \n = 줄바꿈
+:: \r = 리턴
+:: \t = 가로 탭
+:: \u = 유니코드
+
+
+- 숫자
+:: 정수 + 분수
+
+
+- JSON 개체 
+
+- JSON 배열 
+
+- 불리언(Boolean) = True or False
+
+- null
+
+
+
+-------------------------------------------------------------------------------------------------------
+
+5. 예제
+
+다음은 우리가 조금 전까지 이야기하던 것들의 예제입니다 -
+
+{
+  "People": { 
+    "Mojang": [
+      "Dinnerbone",
+      "Jeb",
+      "Grum"
+    ],
+    "Spigot": [
+      "md_5",
+      "Thinkofdeath"
+    ]
+  },
+  "Numbers": [
+    420,
+    1337
+  ]
+}
+
+(People 속 Mojang / Spigot으로 나누어지고, 이후에 사람들의 값으로 나누어짐 / 숫자들)
+
+
+
+
+[[[[[[[[ Part 1 : 파일 생성해보기 ]]]]]]]]
+
+
+자. 우리는 이제 기본기를 익혔습니다. 
+그럼 이제 정보가 포함된 파일을 만들어야 합니다!
+
+이것을 위해서 꽤나 긴 코드가 필요하므로, 우리는 개별적인 클래스를 만들 것입니다.
+
+public class Config {
+    private File file;
+    private JSONObject json; // org.json.simple
+    private JSONParser parser = new JSONParser();
+
+    public Config(File file) {
+        this.file = file;
+        reload();
+    }
+
+    public void reload() {
+        try {
+            // TODO
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+    }
+}
+
+
+우리가 파일로 작업하는 동안, 우리는 try-catch를 꽤 많이 필요로 할 것입니다.
+그러니 한번에 다 해둡시다.
+
+
+바로 이것이 우리의 뼈대입니다. 
+우리가 파일을 만들기 전, 유효한 폴더 구조를 가지고 있는지 확인해볼 필요가 있습니다.
+
+// reload() 내부 
+
+if (!file.getParentFile().exists()) {
+    file.getParentFile().mkdirs();
+}
+
+그리고 우리는 파일을 생성할 수 있습니다:
+
+if (!file.exists()) {
+    PrintWriter pw = new PrintWriter(file, "UTF-8");
+    pw.print("{");
+    pw.print("}");
+    pw.flush();
+    pw.close();
+}
+
+기본적으로 우리는 전체의 기본 config를 출력해야 하지만, 우리는 빈 JSON 객체 하나만 출력합니다.
+이는 우리가 나중에 기본값을 처리할 방법 때문입니다.
+
+위의 작업이 끝나면, 우리는 JSONObject를 로드할 수 있습니다. 
+json = (JSONObject) parser.parse(new InputStreamReader(new FileInputStream(file), "UTF-8"));
+
+
+
+[[[[[[[[ Part 2 : 기본값 추가하기 ]]]]]]]]
+
+
+우리의 config에 필요한 요소들을 구성하려면, 우리는 기본값이 필요합니다.
+그러나 File 혹은 JSONObject 둘 다 기본값을 지원하지 않습니다. 그런데도 이것이 어떻게 가능할까요?
+답은 간단합니다 - 그냥 우리는 해시맵을 만들면 됩니다.
+
+private HashMap<String, Object> defaults = new HashMap<String, Object>();
+
+그리고 기본값들을 추가해줍니다 - 
+
+defaults.put("MyString", "Some String");
+
+defaults.put("MyNumber", 1337);
+
+JSONObject myObject = new JSONObject();
+myObject.put("Test", "test");
+myObject.put("Test2", "test2");
+defaults.put("MyObject", myObject);
+
+JSONArray myArray = new JSONArray();
+myArray.add("Value1");
+myArray.add("Value2");
+defaults.put("MyArray", myArray);
+
+(이클립스가 보여주는 경고는 무시하고, @SuppressWarnings("unchecked") 를 void 앞에 넣어주세요.)
+
+
+이렇게 기본값을 처리하는 방법에는 몇몇 장점들이 있습니다:
+
+사용자가 정보를 어지럽히는 걸 대비해, 정보를 하나도 놓치지 않습니다.
+또한, 우리는 우리의 코드를 값에 넣을 때마다 여러 줄의 코드로 업데이트 할 필요가 없습니다.
+
+
+
+[[[[[[[[ Part 3 : 데이터를 검색하기 ]]]]]]]]
+
+
+
+이제 우리는 데이터를 가져올 수 있습니다.
+우리는 기본값을 생각해야 하기에, 함수를 좀 만들어 둡시다 - 
+
+public String getRawData(String key) {
+    return json.containsKey(key) ? json.get(key).toString()
+        : (defaults.containsKey(key) ? defaults.get(key).toString() : key);
+}
+
+
+약간의 설명: 
+우선 우리는 json 데이터가 우리의 키를 포함했는지를 확인하고 있다면 연결된 값을 반환해줍니다.
+만약 그렇지 않을 땐, 우리는 키의 기본값을 검색해보고 값을 반환합니다.
+만약 그마저도 없다면, 우리는 어쨌든 무언가를 반환해야 하기에 key 그 자체를 반환해줍니다.
+
+여기 당신이 필요할 몇몇 함수들이 있습니다 :
+
+* 문자열
+
+public String getString(String key) {
+    return ChatColor.translateAlternateColorCodes('&', getRawData(key));
+}
+
+translateAlternateColorCodes - 대체 색상 문자를 사용하는 문자열을 Chatcolor. 를 사용하도록 변환합니다.
+
+
+* 부울
+
+public boolean getBoolean(String key) {
+    return Boolean.valueOf(getRawData(key));
+}
+
+
+* double
+
+public double getDouble(String key) {
+    try {
+        return Double.parseDouble(getRawData(key));
+    } catch (Exception ex) { }
+    return -1;
+}
+
+
+* int
+
+public int getInteger(String key) {
+    try {
+        return Integer.parseInt(getRawData(key));
+    } catch (Exception ex) { }
+    return -1;
+}
+ 
+* JSONobject
+
+public JSONObject getObject(String key) {
+    return json.containsKey(key) ? (JSONObject) json.get(key)
+        : (defaults.containsKey(key) ? (JSONObject) defaults.get(key) : new JSONObject());
+}
+ 
+* JSONArray
+
+public JSONArray getArray(String key) {
+    return json.containsKey(key) ? (JSONArray) json.get(key)
+        : (defaults.containsKey(key) ? (JSONArray) defaults.get(key) : new JSONArray());
+}
+
+
+
+[[[[[[[[ Part 4 : 데이터를 저장하기 ]]]]]]]]
+
+
+
+결국에는, 우리는 아직 우리의 config를 저장해야 합니다.
+모든 데이터를 올바르게 저장하기 위해, 우리는 그저 기본값을 반복하면 됩니다.
+
+  public boolean save() {
+     try {
+       JSONObject toSave = new JSONObject();
+     
+       for (String s : defaults.keySet()) {
+         Object o = defaults.get(s);
+         if (o instanceof String) {
+           toSave.put(s, getString(s));
+         } else if (o instanceof Double) {
+           toSave.put(s, getDouble(s));
+         } else if (o instanceof Integer) {
+           toSave.put(s, getInteger(s));
+         } else if (o instanceof JSONObject) {
+           toSave.put(s, getObject(s));
+         } else if (o instanceof JSONArray) {
+           toSave.put(s, getArray(s));
+         }
+      }
+     
+      // TODO
+
+       return true;
+     } catch (Exception ex) {
+       ex.printStackTrace();
+       return false;
+     }
+}
+
+몇몇 괴상한 이유 때문에, JSONObject는 다소 무작위로 작동합니다.  
+이것이 우리가 결과를 TreeMap에 집어넣는 이유입니다.
+이것은 우리의 config를 알파벳 순서대로 정렬해줍니다. 딱히 안 좋을 이유가 없어요.
+
+TreeMap<String, Object> treeMap = new TreeMap<String, Object>(String.CASE_INSENSITIVE_ORDER);
+treeMap.putAll(toSave);
+
+자, 우리는 TreeMap을 정렬했지만, 우리가 treeMap#toString을 사용하려고 하면, 거의 모든 것이 한 줄로 내보내집니다.
+이것을 우리는 읽기 매우 힘들기 때문에, 여기서 Gson을 사용합니다:
+
+ Gson g = new GsonBuilder().setPrettyPrinting().create();
+      String prettyJsonString = g.toJson(treeMap);
+
+
+그리고 마침내, 우리는 이것을 모두 저장할 수 있게 됩니다.
+
+
+[[[[[[[[ Part 5 : 몇몇 예시들 ]]]]]]]]
+
+
+여기 당신이 유용하게 쓸 몇몇 함수들이 있습니다!
+주의 - 당신이 자바, 스피곳, json에 처음이면 절대로 복붙을 하지 마세요. 스스로 먼저 해보세요!
+
+ // Json to Location
+  public static Location jsonToLoc(JSONObject obj) {
+      return new Location(Bukkit.getWorld(obj.get("world").toString()),
+         Double.parseDouble(obj.get("x").toString()),
+         Double.parseDouble(obj.get("y").toString()),
+         Double.parseDouble(obj.get("z").toString()),
+         Float.parseFloat(obj.get("yaw").toString()),
+         Float.parseFloat(obj.get("pitch").toString()));
+   }
+
+   // Location to Json
+   @SuppressWarnings("unchecked")
+   public static JSONObject locToJson(Location loc) {
+     JSONObject jso = new JSONObject();
+     jso.put("world", loc.getWorld().getName());
+     jso.put("x", loc.getX());
+     jso.put("y", loc.getY());
+     jso.put("z", loc.getZ());
+     jso.put("yaw", loc.getYaw());
+     jso.put("pitch", loc.getPitch());
+     return jso;
+   }
+
+   // Json to ItemStack
+   // Example: { "id": "STAINED_CLAY", "count": 1, "durabilty": 3, "lore": "Much lore \nVery text \nSuch wow" }
+   public static ItemStack jsoToItemStack(JSONObject jso) {
+     ItemStack is;
+     MinecraftKey mk = new MinecraftKey(jso.get("id").toString());
+     is = CraftItemStack.asNewCraftStack(Item.REGISTRY.get(mk));
+     if (jso.containsKey("count")) {
+       is.setAmount(Integer.parseInt(jso.get("count").toString()));
+     }
+     if (jso.containsKey("durability")) {
+       is.setDurability(Short.parseShort(jso.get("durability").toString()));
+     }
+     if (is == null || is.getType().equals(Material.AIR)) {
+       return is;
+     }
+   
+     ItemMeta im = is.getItemMeta();
+     List<String> lore = im.hasLore() ? im.getLore() : new ArrayList<String>();
+     if (jso.containsKey("name")) {
+       im.setDisplayName("§r"+ChatColor.translateAlternateColorCodes('&', (String) jso.get("name")));
+     }
+     if (jso.containsKey("lore")) {
+       lore.addAll(Arrays.asList(ChatColor.translateAlternateColorCodes('&',
+         (String) jso.get("lore").toString()).split("\n")));
+     }
+     im.setLore(lore);
+     is.setItemMeta(im);
+     if (jso.containsKey("ench")) {
+       JSONArray enchs = (JSONArray) jso.get("ench");
+       for (int i = 0; i < enchs.size(); i++) {
+         JSONObject ench = (JSONObject) enchs.get(i);
+         is.addUnsafeEnchantment(Enchantment.getByName(ench.get("name").toString()),
+           Integer.parseInt(ench.get("lvl").toString()));
+       }
+     }
+     return is;
+   }
+
+
+
+[[[[[[[[ Part 6 : 완성된 클래스 ]]]]]]]]
+
+
+
+모든 것을 이해했거나, 게으른 자들을 위해.
+
+주의 - 당신이 자바, 스피곳, json에 처음이면 절대로 복붙을 하지 마세요. 스스로 먼저 해보세요!
+
+
+package ...;
+
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileWriter;
+import java.io.InputStreamReader;
+import java.io.PrintWriter;
+import java.util.HashMap;
+import java.util.TreeMap;
+
+import org.bukkit.ChatColor;
+import org.json.simple.JSONArray;
+import org.json.simple.JSONObject;
+import org.json.simple.parser.JSONParser;
+
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonParser;
+
+public class Config {
+
+   private File file;
+   private JSONObject json;
+   private JSONParser parser = new JSONParser();
+   private HashMap<String, Object> defaults = new HashMap<String, Object>();
+ 
+   public Config(File file) {
+     this.file = file;
+     reload();
+   }
+ 
+   @SuppressWarnings("unchecked")
+   public void reload() {
+     try {
+       if (!file.getParentFile().exists()) {
+         file.getParentFile().mkdirs();
+       }
+       if (!file.exists()) {
+         PrintWriter pw = new PrintWriter(file, "UTF-8");
+         pw.print("{");
+         pw.print("}");
+         pw.flush();
+         pw.close();
+       }
+       json = (JSONObject) parser.parse(new InputStreamReader(new FileInputStream(file), "UTF-8"));
+     
+       defaults.put("WelcomeMessage", "Welcome to my server!");
+       defaults.put("MyNumber", 1337);
+     
+       JSONObject myObject = new JSONObject();
+       myObject.put("Test", "test");
+       myObject.put("Test2", "test2");
+       defaults.put("MyObject", myObject);
+     
+       JSONArray myArray = new JSONArray();
+       myArray.add("Value1");
+       myArray.add("Value2");
+       defaults.put("MyArray", myArray);
+     } catch (Exception ex) {
+       ex.printStackTrace();
+     }
+  }
+
+  @SuppressWarnings("unchecked")
+   public boolean save() {
+     try {
+       JSONObject toSave = new JSONObject();
+     
+       for (String s : defaults.keySet()) {
+         Object o = defaults.get(s);
+         if (o instanceof String) {
+           toSave.put(s, getString(s));
+         } else if (o instanceof Double) {
+           toSave.put(s, getDouble(s));
+         } else if (o instanceof Integer) {
+           toSave.put(s, getInteger(s));
+         } else if (o instanceof JSONObject) {
+           toSave.put(s, getObject(s));
+         } else if (o instanceof JSONArray) {
+           toSave.put(s, getArray(s));
+         }
+       }
+     
+       TreeMap<String, Object> treeMap = new TreeMap<String, Object>(String.CASE_INSENSITIVE_ORDER);
+       treeMap.putAll(toSave);
+     
+      Gson g = new GsonBuilder().setPrettyPrinting().create();
+      String prettyJsonString = g.toJson(treeMap);
+     
+       FileWriter fw = new FileWriter(file);
+       fw.write(prettyJsonString);
+       fw.flush();
+       fw.close();
+     
+       return true;
+     } catch (Exception ex) {
+       ex.printStackTrace();
+       return false;
+     }
+  }
+ 
+  public String getRawData(String key) {
+    return json.containsKey(key) ? json.get(key).toString()
+       : (defaults.containsKey(key) ? defaults.get(key).toString() : key);
+  }
+ 
+  public String getString(String key) {
+    return ChatColor.translateAlternateColorCodes('&', getRawData(key));
+  }
+
+  public boolean getBoolean(String key) {
+    return Boolean.valueOf(getRawData(key));
+  }
+
+  public double getDouble(String key) {
+    try {
+      return Double.parseDouble(getRawData(key));
+    } catch (Exception ex) { }
+    return -1;
+  }
+
+  public double getInteger(String key) {
+    try {
+      return Integer.parseInt(getRawData(key));
+    } catch (Exception ex) { }
+    return -1;
+  }
+ 
+  public JSONObject getObject(String key) {
+     return json.containsKey(key) ? (JSONObject) json.get(key)
+       : (defaults.containsKey(key) ? (JSONObject) defaults.get(key) : new JSONObject());
+  }
+ 
+  public JSONArray getArray(String key) {
+     return json.containsKey(key) ? (JSONArray) json.get(key)
+       : (defaults.containsKey(key) ? (JSONArray) defaults.get(key) : new JSONArray());
+  }
+ 
+}
